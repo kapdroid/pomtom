@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.kapdroid.pomtom.common.Result
 import com.kapdroid.pomtom.domain.entity.AppSettings
 import com.kapdroid.pomtom.domain.entity.AppTheme
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.SessionConfig
 import com.kapdroid.pomtom.domain.entity.Wallpaper
 import com.kapdroid.pomtom.domain.repository.SettingsRepository
@@ -13,6 +14,7 @@ import com.kapdroid.pomtom.domain.usecase.DeleteWallpaperUseCase
 import com.kapdroid.pomtom.domain.usecase.ImportWallpaperUseCase
 import com.kapdroid.pomtom.domain.usecase.SelectThemeUseCase
 import com.kapdroid.pomtom.domain.usecase.SelectWallpaperUseCase
+import com.kapdroid.pomtom.domain.usecase.SetCompanionUseCase
 import com.kapdroid.pomtom.domain.usecase.ToggleStrictModeUseCase
 import com.kapdroid.pomtom.domain.usecase.UpdateSessionConfigUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +37,7 @@ data class SettingsUiState(
     val isImportingWallpaper: Boolean = false,
     val wallpaperError: String? = null,
     val activeEditor: DurationField? = null,
+    val companion: CompanionType = CompanionType.Default,
 )
 
 sealed interface SettingsUiEvent {
@@ -51,6 +54,7 @@ sealed interface SettingsUiEvent {
     data class DeleteWallpaper(val id: String) : SettingsUiEvent
     data object DismissWallpaperError : SettingsUiEvent
     data class WallpaperPickerError(val message: String?) : SettingsUiEvent
+    data class SetCompanion(val companion: CompanionType) : SettingsUiEvent
 }
 
 class SettingsViewModel(
@@ -62,6 +66,7 @@ class SettingsViewModel(
     private val selectWallpaper: SelectWallpaperUseCase,
     private val importWallpaper: ImportWallpaperUseCase,
     private val deleteWallpaper: DeleteWallpaperUseCase,
+    private val setCompanion: SetCompanionUseCase,
 ) : ViewModel() {
 
     private val _activeEditor = MutableStateFlow<DurationField?>(null)
@@ -85,6 +90,7 @@ class SettingsViewModel(
                 isImportingWallpaper = importing,
                 wallpaperError = error,
                 activeEditor = editor,
+                companion = settings.companion,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -107,6 +113,7 @@ class SettingsViewModel(
             is SettingsUiEvent.DeleteWallpaper -> viewModelScope.launch { deleteWallpaper(event.id) }
             SettingsUiEvent.DismissWallpaperError -> _wallpaperError.value = null
             is SettingsUiEvent.WallpaperPickerError -> _wallpaperError.value = event.message ?: "Couldn’t pick image."
+            is SettingsUiEvent.SetCompanion -> viewModelScope.launch { setCompanion(event.companion) }
         }
     }
 

@@ -49,6 +49,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenAudioMixer: () -> Unit,
     onOpenGoals: () -> Unit,
+    onCreateGoal: () -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -79,7 +80,10 @@ fun HomeScreen(
             if (state.attachedGoal != null) {
                 GoalCard(state.attachedGoal!!)
             } else {
-                GoalSuggestionCard(modifier = Modifier.semantics { contentDescription = "Add a goal" })
+                GoalSuggestionCard(
+                    onClick = onCreateGoal,
+                    modifier = Modifier.semantics { contentDescription = "Add a goal" },
+                )
             }
             Spacer(Modifier.height(28.dp))
             TimerHero(

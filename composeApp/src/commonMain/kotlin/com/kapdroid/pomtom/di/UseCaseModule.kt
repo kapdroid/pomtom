@@ -14,6 +14,7 @@ import com.kapdroid.pomtom.domain.usecase.PauseFocusSessionUseCase
 import com.kapdroid.pomtom.domain.usecase.ResumeFocusSessionUseCase
 import com.kapdroid.pomtom.domain.usecase.SelectThemeUseCase
 import com.kapdroid.pomtom.domain.usecase.SelectWallpaperUseCase
+import com.kapdroid.pomtom.domain.usecase.SetCompanionUseCase
 import com.kapdroid.pomtom.domain.usecase.SetGoalAttachModeUseCase
 import com.kapdroid.pomtom.domain.usecase.StartFocusSessionUseCase
 import com.kapdroid.pomtom.domain.usecase.ToggleStrictModeUseCase
@@ -39,4 +40,5 @@ val useCaseModule = module {
     factory { SelectThemeUseCase(get(), get()) }
     factory { SelectWallpaperUseCase(get()) }
     factory { CompleteOnboardingUseCase(get()) }
+    factory { SetCompanionUseCase(get()) }
 }

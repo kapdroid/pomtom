@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kapdroid.pomtom.audio.AudioEngine
 import com.kapdroid.pomtom.common.Clock
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.FocusSession
 import com.kapdroid.pomtom.domain.entity.Goal
 import com.kapdroid.pomtom.domain.entity.SessionConfig
@@ -39,6 +40,7 @@ data class SessionUiState(
     val nowMs: Long = 0L,
     val isLoading: Boolean = true,
     val ambient: AmbientStatus = AmbientStatus.Idle,
+    val companion: CompanionType = CompanionType.Default,
 ) {
     val remainingMs: Long get() = session?.let {
         when (it.status) {
@@ -145,6 +147,7 @@ class SessionViewModel(
                 nowMs = time,
                 isLoading = false,
                 ambient = ambient,
+                companion = settings.companion,
             )
         }.stateIn(
             scope = viewModelScope,

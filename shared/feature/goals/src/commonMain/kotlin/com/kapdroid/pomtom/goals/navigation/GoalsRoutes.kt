@@ -1,29 +1,30 @@
 package com.kapdroid.pomtom.goals.navigation
 
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import com.kapdroid.pomtom.goals.presentation.GoalsScreen
-import com.kapdroid.pomtom.goals.presentation.NewGoalScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
 data object GoalsListRoute
 
+/**
+ * The "create new goal" page. Lives at the **top-level** nav graph (registered in
+ * `AppNavHost`), not inside the goals tab's nested NavHost — it's reachable from both
+ * the goals list and the home screen's "no active goal" CTA, so a top-level route lets
+ * either context navigate without depending on the other's nav controller.
+ */
 @Serializable
 data object NewGoalRoute
 
 fun NavGraphBuilder.goalsGraph(
-    navController: NavHostController,
     onBack: () -> Unit,
+    onCreate: () -> Unit,
 ) {
     composable<GoalsListRoute> {
         GoalsScreen(
             onBack = onBack,
-            onCreate = { navController.navigate(NewGoalRoute) },
+            onCreate = onCreate,
         )
-    }
-    composable<NewGoalRoute> {
-        NewGoalScreen(onBack = { navController.popBackStack() })
     }
 }

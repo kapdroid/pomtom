@@ -30,6 +30,9 @@ koinComposeMultiplatform = "4.0.0"
 # Coil 3 (KMP image loading)
 coil = "3.0.4"
 
+# Compottie (Lottie animations on Compose Multiplatform)
+compottie = "2.0.0-rc04"
+
 # Media3 (Android audio)
 media3 = "1.5.1"
 
@@ -79,6 +82,10 @@ koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", ver
 
 # Coil 3 (KMP)
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+
+# Compottie (Lottie for Compose Multiplatform)
+compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "compottie" }
+compottie-resources = { module = "io.github.alexzhirkevich:compottie-resources", version.ref = "compottie" }
 
 # Media3 (Android-only audio)
 media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }

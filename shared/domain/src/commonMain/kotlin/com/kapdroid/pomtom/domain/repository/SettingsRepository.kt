@@ -2,6 +2,7 @@ package com.kapdroid.pomtom.domain.repository
 
 import com.kapdroid.pomtom.domain.entity.AppSettings
 import com.kapdroid.pomtom.domain.entity.AppTheme
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.MotionIntensity
 import com.kapdroid.pomtom.domain.entity.SessionConfig
 import kotlinx.coroutines.flow.Flow
@@ -18,4 +19,5 @@ interface SettingsRepository {
     suspend fun setMasterVolume(volume: Float)
     suspend fun setFirstRunComplete(value: Boolean)
     suspend fun setFocusAudioTrackId(id: String?)
+    suspend fun setCompanion(companion: CompanionType)
 }

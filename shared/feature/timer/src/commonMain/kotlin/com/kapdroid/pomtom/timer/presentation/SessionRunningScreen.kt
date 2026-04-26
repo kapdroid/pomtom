@@ -41,10 +41,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kapdroid.pomtom.designsystem.components.AuroraBackground
+import com.kapdroid.pomtom.designsystem.components.CompanionAssets
 import com.kapdroid.pomtom.designsystem.components.EqIcon
+import com.kapdroid.pomtom.designsystem.components.FocusCompanion
 import com.kapdroid.pomtom.designsystem.components.ProgressRing
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
 import com.kapdroid.pomtom.designsystem.util.softCard
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.SessionPhase
 import com.kapdroid.pomtom.timer.presentation.components.CycleDotsRow
 import com.kapdroid.pomtom.timer.presentation.util.TimeFormat
@@ -116,6 +119,18 @@ fun SessionRunningScreen(
             }
             Spacer(Modifier.height(28.dp))
             AmbientPeek(ambient = state.ambient, onClick = onOpenAudioMixer)
+            // Focus companion: bundled Lottie with built-in transparency, only visible
+            // during FOCUS phases. Breaks intentionally hide it — break vibe is
+            // "look away from the screen", not "watch the pet".
+            val asset = state.companion.assetPath()
+            if (asset != null && state.session?.phase == SessionPhase.FOCUS) {
+                Spacer(Modifier.height(14.dp))
+                FocusCompanion(
+                    assetPath = asset,
+                    contentDescription = state.companion.label(),
+                    paused = state.isPaused,
+                )
+            }
             Spacer(Modifier.weight(1f))
             ActionCluster(
                 isPaused = state.isPaused,
@@ -263,4 +278,18 @@ private fun SessionPhase.displayLabel(): String = when (this) {
     SessionPhase.FOCUS -> "FOCUS"
     SessionPhase.SHORT_BREAK -> "SHORT BREAK"
     SessionPhase.LONG_BREAK -> "LONG BREAK"
+}
+
+internal fun CompanionType.assetPath(): String? = when (this) {
+    CompanionType.OFF -> null
+    CompanionType.MEDITATING_FOX -> CompanionAssets.MEDITATING_FOX
+    CompanionType.MOON_CAT -> CompanionAssets.MOON_CAT
+    CompanionType.PLAYFUL_CAT -> CompanionAssets.PLAYFUL_CAT
+}
+
+internal fun CompanionType.label(): String = when (this) {
+    CompanionType.OFF -> "No companion"
+    CompanionType.MEDITATING_FOX -> "Meditating fox"
+    CompanionType.MOON_CAT -> "Cat fishing on the moon"
+    CompanionType.PLAYFUL_CAT -> "Playful cat"
 }

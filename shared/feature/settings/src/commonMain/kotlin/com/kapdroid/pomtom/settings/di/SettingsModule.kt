@@ -15,6 +15,7 @@ val settingsModule = module {
             selectWallpaper = get(),
             importWallpaper = get(),
             deleteWallpaper = get(),
+            setCompanion = get(),
         )
     }
 }

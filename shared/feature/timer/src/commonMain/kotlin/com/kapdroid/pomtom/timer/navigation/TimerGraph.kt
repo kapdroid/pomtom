@@ -22,6 +22,7 @@ fun NavGraphBuilder.timerGraph(
     onOpenSettings: () -> Unit,
     onOpenAudioMixer: () -> Unit,
     onOpenGoals: () -> Unit,
+    onCreateGoal: () -> Unit,
     onCelebrate: (sessionId: String, goalId: String?) -> Unit,
 ) {
     composable<TimerHomeRoute> {
@@ -31,6 +32,7 @@ fun NavGraphBuilder.timerGraph(
             onOpenSettings = onOpenSettings,
             onOpenAudioMixer = onOpenAudioMixer,
             onOpenGoals = onOpenGoals,
+            onCreateGoal = onCreateGoal,
         )
     }
     composable<TimerSessionRoute> {

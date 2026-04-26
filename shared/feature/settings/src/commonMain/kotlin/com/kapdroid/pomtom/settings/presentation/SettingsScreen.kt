@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.kapdroid.pomtom.designsystem.components.CompanionAssets
+import com.kapdroid.pomtom.designsystem.components.CompanionPreviewTile
 import com.kapdroid.pomtom.designsystem.theme.LocalPomtomColors
 import com.kapdroid.pomtom.designsystem.theme.PomtomColors
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
@@ -62,6 +64,7 @@ import com.kapdroid.pomtom.designsystem.theme.palettes.ForestPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.PaperPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.RosePalette
 import com.kapdroid.pomtom.domain.entity.AppTheme
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.SessionConfig
 import com.kapdroid.pomtom.domain.entity.Wallpaper
 import com.kapdroid.pomtom.domain.entity.WallpaperSource
@@ -126,6 +129,7 @@ private fun SettingsContent(
                 item { ProfileCard() }
                 item { SessionSection(state.sessionConfig, onEvent) }
                 item { StrictSection(state.sessionConfig.strictMode, onEvent) }
+                item { CompanionSection(state.companion, onEvent) }
                 item { AestheticSection(state.theme, onEvent) }
                 item {
                     WallpaperSection(
@@ -273,6 +277,106 @@ private fun StrictSection(enabled: Boolean, onEvent: (SettingsUiEvent) -> Unit) 
         Divider()
         StrictNote()
     }
+}
+
+@Composable
+private fun CompanionSection(selected: CompanionType, onEvent: (SettingsUiEvent) -> Unit) {
+    Section(title = "Focus companion") {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            CompanionType.entries.forEach { type ->
+                CompanionRow(
+                    type = type,
+                    selected = type == selected,
+                    onClick = { onEvent(SettingsUiEvent.SetCompanion(type)) },
+                )
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "Soft animated creature shown only during focus phases. " +
+                    "Pick None to hide it entirely.",
+                style = PomtomTheme.typography.body.copy(fontSize = 11.sp, lineHeight = 15.sp),
+                color = PomtomTheme.colors.ink3,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompanionRow(
+    type: CompanionType,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val colors = PomtomTheme.colors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (selected) colors.amber.copy(alpha = 0.12f) else Color.Transparent)
+            .border(
+                width = 1.dp,
+                color = if (selected) colors.amber.copy(alpha = 0.6f) else colors.ink3.copy(alpha = 0.20f),
+                shape = RoundedCornerShape(14.dp),
+            )
+            .clickable(role = Role.RadioButton, onClick = onClick)
+            .semantics { contentDescription = "${type.title()}, ${if (selected) "selected" else "not selected"}" }
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CompanionPreviewTile(
+            assetPath = type.assetPath(),
+            widthDp = 76.dp,
+            heightDp = 52.dp,
+        )
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = type.title(),
+                style = PomtomTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                color = colors.ink,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = type.subtitle(),
+                style = PomtomTheme.typography.body.copy(fontSize = 11.sp, lineHeight = 15.sp),
+                color = colors.ink3,
+            )
+        }
+        if (selected) {
+            Spacer(Modifier.width(10.dp))
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                tint = colors.amber,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+private fun CompanionType.assetPath(): String? = when (this) {
+    CompanionType.OFF -> null
+    CompanionType.MEDITATING_FOX -> CompanionAssets.MEDITATING_FOX
+    CompanionType.MOON_CAT -> CompanionAssets.MOON_CAT
+    CompanionType.PLAYFUL_CAT -> CompanionAssets.PLAYFUL_CAT
+}
+
+private fun CompanionType.title(): String = when (this) {
+    CompanionType.OFF -> "None"
+    CompanionType.MEDITATING_FOX -> "Meditating fox"
+    CompanionType.MOON_CAT -> "Moonlit cat"
+    CompanionType.PLAYFUL_CAT -> "Playful cat"
+}
+
+private fun CompanionType.subtitle(): String = when (this) {
+    CompanionType.OFF -> "No companion. Just the ring."
+    CompanionType.MEDITATING_FOX -> "Calm lotus pose. Embodies focus."
+    CompanionType.MOON_CAT -> "Cat fishing on the moon. Quiet whimsy."
+    CompanionType.PLAYFUL_CAT -> "Light, bouncy energy for active sessions."
 }
 
 @Composable

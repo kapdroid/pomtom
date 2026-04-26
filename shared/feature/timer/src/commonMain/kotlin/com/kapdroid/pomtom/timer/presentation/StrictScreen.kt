@@ -51,8 +51,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kapdroid.pomtom.designsystem.components.AuroraBackground
+import com.kapdroid.pomtom.designsystem.components.FocusCompanion
 import com.kapdroid.pomtom.designsystem.components.ProgressRing
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.domain.entity.SessionPhase
 import com.kapdroid.pomtom.platform.FocusModeController
 import com.kapdroid.pomtom.timer.presentation.util.TimeFormat
 import org.koin.compose.koinInject
@@ -132,6 +134,18 @@ private fun StrictScreenContent(
             StrictRing(state = state)
             Spacer(Modifier.height(28.dp))
             StrictQuote()
+            // Strict mode shows the same companion — it's the calmest signal of
+            // "we're in deep work." Hidden during breaks for the same reason as
+            // the standard session screen.
+            val asset = state.companion.assetPath()
+            if (asset != null && state.session?.phase == SessionPhase.FOCUS) {
+                Spacer(Modifier.height(18.dp))
+                FocusCompanion(
+                    assetPath = asset,
+                    contentDescription = state.companion.label(),
+                    paused = state.isPaused,
+                )
+            }
             Spacer(Modifier.weight(1f))
             StatusChips()
             Spacer(Modifier.height(14.dp))

@@ -3,6 +3,7 @@ package com.kapdroid.pomtom.domain.usecase
 import com.kapdroid.pomtom.common.DomainEvent
 import com.kapdroid.pomtom.common.EventBus
 import com.kapdroid.pomtom.domain.entity.AppTheme
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.SessionConfig
 import com.kapdroid.pomtom.domain.repository.SettingsRepository
 
@@ -30,4 +31,8 @@ class SelectWallpaperUseCase(private val settings: SettingsRepository) {
 
 class CompleteOnboardingUseCase(private val settings: SettingsRepository) {
     suspend operator fun invoke() = settings.setFirstRunComplete(true)
+}
+
+class SetCompanionUseCase(private val settings: SettingsRepository) {
+    suspend operator fun invoke(companion: CompanionType) = settings.setCompanion(companion)
 }

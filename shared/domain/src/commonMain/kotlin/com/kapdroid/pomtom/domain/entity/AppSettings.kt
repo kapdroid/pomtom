@@ -15,6 +15,12 @@ data class AppSettings(
      * during FOCUS phases. `null` means the user has not chosen one (silent focus).
      */
     val focusAudioTrackId: String? = null,
+    /**
+     * Ambient creature shown during FOCUS phases on the session and strict screens.
+     * Defaults to a calm meditating fox; users can switch creatures or disable
+     * entirely from Settings → Focus companion.
+     */
+    val companion: CompanionType = CompanionType.Default,
 ) {
     val focus: Duration get() = sessionConfig.focus
     val shortBreak: Duration get() = sessionConfig.shortBreak

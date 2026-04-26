@@ -2,6 +2,7 @@ package com.kapdroid.pomtom.domain.fakes
 
 import com.kapdroid.pomtom.domain.entity.AppSettings
 import com.kapdroid.pomtom.domain.entity.AppTheme
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.FocusSession
 import com.kapdroid.pomtom.domain.entity.Goal
 import com.kapdroid.pomtom.domain.entity.GoalAttachMode
@@ -45,6 +46,9 @@ class FakeSettingsRepository(initial: AppSettings = AppSettings.Defaults) : Sett
     }
     override suspend fun setFocusAudioTrackId(id: String?) {
         state.value = state.value.copy(focusAudioTrackId = id)
+    }
+    override suspend fun setCompanion(companion: CompanionType) {
+        state.value = state.value.copy(companion = companion)
     }
 }
 

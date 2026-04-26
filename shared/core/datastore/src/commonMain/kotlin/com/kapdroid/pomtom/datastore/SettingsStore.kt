@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.kapdroid.pomtom.domain.entity.AppSettings
 import com.kapdroid.pomtom.domain.entity.AppTheme
+import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.MotionIntensity
 import com.kapdroid.pomtom.domain.entity.SessionConfig
 import com.kapdroid.pomtom.domain.repository.SettingsRepository
@@ -38,6 +39,7 @@ private object Keys {
     val MASTER_VOLUME = floatPreferencesKey("master_volume")
     val FIRST_RUN = booleanPreferencesKey("first_run_complete")
     val FOCUS_AUDIO_TRACK = stringPreferencesKey("focus_audio_track_id")
+    val COMPANION = stringPreferencesKey("companion_type")
 }
 
 class SettingsStore(private val dataStore: DataStore<Preferences>) : SettingsRepository {
@@ -88,6 +90,10 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) : SettingsRep
         }
     }
 
+    override suspend fun setCompanion(companion: CompanionType) {
+        dataStore.edit { it[Keys.COMPANION] = companion.name }
+    }
+
     private fun Preferences.toSettings(): AppSettings {
         val defaults = AppSettings.Defaults
         val focus = (this[Keys.FOCUS_MS] ?: defaults.focus.inWholeMilliseconds).milliseconds
@@ -109,6 +115,9 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) : SettingsRep
             firstRunComplete = this[Keys.FIRST_RUN] ?: false,
             masterVolume = this[Keys.MASTER_VOLUME] ?: 1f,
             focusAudioTrackId = this[Keys.FOCUS_AUDIO_TRACK],
+            companion = this[Keys.COMPANION]?.let { stored ->
+                runCatching { CompanionType.valueOf(stored) }.getOrNull()
+            } ?: CompanionType.Default,
         )
     }
 }

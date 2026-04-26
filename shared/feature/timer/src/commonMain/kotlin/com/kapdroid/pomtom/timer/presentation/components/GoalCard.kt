@@ -1,6 +1,7 @@
 package com.kapdroid.pomtom.timer.presentation.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
 import com.kapdroid.pomtom.designsystem.util.softCard
@@ -80,12 +82,18 @@ fun GoalCard(goal: Goal, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun GoalSuggestionCard(modifier: Modifier = Modifier) {
+fun GoalSuggestionCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val colors = PomtomTheme.colors
+    // Whole card is the click target — bigger than just tapping the small + plate, and
+    // the affordance ("tap this card to add a goal") matches the visual prominence.
     Row(
         modifier = modifier
             .fillMaxWidth()
             .softCard()
+            .clickable(role = Role.Button, onClickLabel = "Add a goal", onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,

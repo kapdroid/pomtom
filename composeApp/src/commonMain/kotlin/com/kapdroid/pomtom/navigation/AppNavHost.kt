@@ -43,6 +43,7 @@ import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
 import com.kapdroid.pomtom.goals.navigation.GoalsListRoute
 import com.kapdroid.pomtom.goals.navigation.NewGoalRoute
 import com.kapdroid.pomtom.goals.navigation.goalsGraph
+import com.kapdroid.pomtom.goals.presentation.NewGoalScreen
 import com.kapdroid.pomtom.onboarding.presentation.OnboardingScreen
 import com.kapdroid.pomtom.settings.presentation.SettingsScreen
 import com.kapdroid.pomtom.stats.navigation.StatsHomeRoute
@@ -85,6 +86,7 @@ fun AppNavHost(startDestination: Any = TimerTabRoute) {
                         onOpenSettings = { navController.navigate(SettingsRoute) },
                         onOpenAudioMixer = { navController.navigate(AudioMixerRoute) },
                         onOpenGoals = { navController.navigate(GoalsTabRoute) },
+                        onCreateGoal = { navController.navigate(NewGoalRoute) },
                         onCelebrate = { sessionId, goalId ->
                             navController.navigate(CelebrateRoute(sessionId, goalId))
                         },
@@ -92,6 +94,9 @@ fun AppNavHost(startDestination: Any = TimerTabRoute) {
                 }
                 composable<GoalsTabRoute> {
                     GoalsTabHost(parent = navController)
+                }
+                composable<NewGoalRoute> {
+                    NewGoalScreen(onBack = { navController.popBackStack() })
                 }
                 composable<StatsTabRoute> { StatsTabHost() }
                 composable<YouTabRoute> { ComingSoonScreen(title = "You") }
@@ -135,6 +140,7 @@ private fun TimerTabHost(
     onOpenSettings: () -> Unit,
     onOpenAudioMixer: () -> Unit,
     onOpenGoals: () -> Unit,
+    onCreateGoal: () -> Unit,
     onCelebrate: (String, String?) -> Unit,
 ) {
     val navController = rememberNavController()
@@ -144,6 +150,7 @@ private fun TimerTabHost(
             onOpenSettings = onOpenSettings,
             onOpenAudioMixer = onOpenAudioMixer,
             onOpenGoals = onOpenGoals,
+            onCreateGoal = onCreateGoal,
             onCelebrate = onCelebrate,
         )
     }
@@ -154,8 +161,12 @@ private fun GoalsTabHost(parent: NavHostController) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = GoalsListRoute) {
         goalsGraph(
-            navController = navController,
             onBack = { parent.popBackStack() },
+            // NewGoalRoute lives at the top-level nav (registered in AppNavHost), so the
+            // goals list navigates "up and over" via the parent controller. This keeps a
+            // single source of truth for the create-goal destination — Home and Goals
+            // both reach the same composable.
+            onCreate = { parent.navigate(NewGoalRoute) },
         )
     }
 }
