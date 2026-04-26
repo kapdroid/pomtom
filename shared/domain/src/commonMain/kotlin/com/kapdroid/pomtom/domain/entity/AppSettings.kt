@@ -33,7 +33,11 @@ data class AppSettings(
                 shortBreak = 5.minutes,
                 longBreak = 20.minutes,
                 cyclesBeforeLong = 4,
-                strictMode = false,
+                // Strict mode on out of the box — see SessionConfig.strictMode for the
+                // rationale; AppSettings.Defaults is the single source of truth fed to
+                // a fresh install before DataStore has anything written, so it must
+                // agree with the data-class default.
+                strictMode = true,
             ),
         )
     }

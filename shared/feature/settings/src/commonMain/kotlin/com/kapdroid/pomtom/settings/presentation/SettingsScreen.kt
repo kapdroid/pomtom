@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.kapdroid.pomtom.designsystem.components.CompanionAssets
 import com.kapdroid.pomtom.designsystem.components.CompanionPreviewTile
+import com.kapdroid.pomtom.designsystem.resources.Res
 import com.kapdroid.pomtom.designsystem.theme.LocalPomtomColors
 import com.kapdroid.pomtom.designsystem.theme.PomtomColors
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
@@ -68,6 +69,7 @@ import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.SessionConfig
 import com.kapdroid.pomtom.domain.entity.Wallpaper
 import com.kapdroid.pomtom.domain.entity.WallpaperSource
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import com.kapdroid.pomtom.filepicker.FileKind
 import com.kapdroid.pomtom.filepicker.PickerCancelledException
 import com.kapdroid.pomtom.filepicker.rememberFilePicker
@@ -216,7 +218,7 @@ private fun ProfileCard() {
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Pomtom · focused",
+                text = "PomTom · focused",
                 style = PomtomTheme.typography.titleSerif.copy(
                     fontSize = 20.sp,
                     fontStyle = FontStyle.Italic,
@@ -398,7 +400,9 @@ private fun WallpaperSection(
     onLaunchPicker: () -> Unit,
     onEvent: (SettingsUiEvent) -> Unit,
 ) {
-    val userWallpapers = wallpapers.filter { it.source == WallpaperSource.USER }
+    // Bundled wallpapers come first (the repository pre-pends them), then user-imported.
+    // Both use the same WallpaperTile composable; bundled tiles just suppress the delete
+    // affordance because their existence is compile-time, not user data.
     Section(title = "Wallpaper") {
         Column(modifier = Modifier.padding(12.dp)) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -408,7 +412,7 @@ private fun WallpaperSection(
                         onClick = { onEvent(SettingsUiEvent.SelectWallpaper(null)) },
                     )
                 }
-                items(userWallpapers, key = { it.id }) { wallpaper ->
+                items(wallpapers, key = { it.id }) { wallpaper ->
                     WallpaperTile(
                         wallpaper = wallpaper,
                         selected = wallpaper.id == activeId,
@@ -476,6 +480,7 @@ private fun WallpaperTile(
     val colors = PomtomTheme.colors
     val borderColor = if (selected) colors.ink else colors.ink3.copy(alpha = 0.30f)
     val borderWidth by animateDpAsState(targetValue = if (selected) 2.dp else 1.dp, label = "wallpaper-tile-border")
+    val isBundled = wallpaper.source == WallpaperSource.BUNDLED
     Box(
         modifier = Modifier
             .size(width = 88.dp, height = 116.dp)
@@ -486,15 +491,18 @@ private fun WallpaperTile(
             .semantics { contentDescription = wallpaper.displayName },
     ) {
         AsyncImage(
-            model = wallpaper.localPath.asFileUriIfNeeded(),
+            model = wallpaper.localPath.asWallpaperModel(),
             contentDescription = null,
             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)),
             contentScale = ContentScale.Crop,
         )
-        if (selected) {
-            SelectedBadge(modifier = Modifier.align(Alignment.TopEnd))
-        } else {
-            DeleteBadge(
+        when {
+            selected -> SelectedBadge(modifier = Modifier.align(Alignment.TopEnd))
+            // Bundled wallpapers can't be deleted (they live in the binary), so we omit
+            // the delete affordance entirely. The repo also defends against deletion at
+            // the call site as belt-and-braces.
+            isBundled -> Unit
+            else -> DeleteBadge(
                 onClick = onDelete,
                 modifier = Modifier.align(Alignment.TopEnd),
             )
@@ -615,9 +623,21 @@ private fun WallpaperErrorRow(message: String, onDismiss: () -> Unit) {
     }
 }
 
-private fun String.asFileUriIfNeeded(): String =
-    if (startsWith("file:") || startsWith("content:") || startsWith("http")) this
-    else "file://$this"
+/**
+ * Resolves a [Wallpaper.localPath] to a URL Coil can load. Mirrors the helper in
+ * `AuroraBackground` — kept local rather than shared to avoid coupling Settings to a
+ * designsystem private. The three shapes:
+ *  - Already-qualified URI (`file:`, `content:`, `http`) → as-is (user-imported file
+ *    paths and content URIs).
+ *  - Relative compose-resource path (`files/...`) → `Res.getUri(...)` (bundled).
+ *  - Bare absolute path → prepend `file://` (legacy fallback).
+ */
+@OptIn(ExperimentalResourceApi::class)
+private fun String.asWallpaperModel(): String = when {
+    startsWith("file:") || startsWith("content:") || startsWith("http") -> this
+    startsWith("files/") -> Res.getUri(this)
+    else -> "file://$this"
+}
 
 @Composable
 private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {

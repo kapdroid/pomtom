@@ -144,7 +144,7 @@ private fun HomeChrome(onOpenSettings: () -> Unit) {
         }
         Spacer(Modifier.width(12.dp))
         Column {
-            Text("Pomtom", style = PomtomTheme.typography.titleSans, color = colors.ink)
+            Text("PomTom", style = PomtomTheme.typography.titleSans, color = colors.ink)
             Text("Tuesday · 3 of 4 cycles", style = PomtomTheme.typography.caption, color = colors.ink3)
         }
         Spacer(Modifier.weight(1f))

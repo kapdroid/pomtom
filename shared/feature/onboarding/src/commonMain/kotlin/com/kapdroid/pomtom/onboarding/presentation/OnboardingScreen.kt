@@ -138,7 +138,7 @@ private fun BrandRow(onSkip: () -> Unit, skipEnabled: Boolean) {
             )
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "Pomtom",
+                text = "PomTom",
                 style = PomtomTheme.typography.titleSerif.copy(fontSize = 18.sp),
                 color = colors.ink,
             )

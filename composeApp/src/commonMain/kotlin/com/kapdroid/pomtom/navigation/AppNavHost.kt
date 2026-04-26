@@ -99,7 +99,14 @@ fun AppNavHost(startDestination: Any = TimerTabRoute) {
                     NewGoalScreen(onBack = { navController.popBackStack() })
                 }
                 composable<StatsTabRoute> { StatsTabHost() }
-                composable<YouTabRoute> { ComingSoonScreen(title = "You") }
+                // The "You" tab and the gear icon on Home both land on the same
+                // SettingsScreen. The gear opens it as the top-level modal SettingsRoute
+                // (bottom nav hidden); the You tab renders it inline (bottom nav stays
+                // visible). The back arrow inside Settings pops back to wherever the
+                // user came from — for the tab path that's whichever tab they had open.
+                composable<YouTabRoute> {
+                    SettingsScreen(onBack = { navController.popBackStack() })
+                }
                 composable<AudioMixerRoute> { AudioMixerScreen(onClose = { navController.popBackStack() }) }
                 composable<SettingsRoute> { SettingsScreen(onBack = { navController.popBackStack() }) }
                 composable<CelebrateRoute> { entry ->

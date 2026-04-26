@@ -8,7 +8,9 @@ data class SessionConfig(
     val shortBreak: Duration = 5.minutes,
     val longBreak: Duration = 20.minutes,
     val cyclesBeforeLong: Int = 4,
-    val strictMode: Boolean = false,
+    // Strict mode is on by default — fresh installs get fullscreen wake-lock + hold-to-exit
+    // out of the box. Users can disable it via Settings → Strict mode if they prefer.
+    val strictMode: Boolean = true,
 ) {
     init {
         require(focus.inWholeSeconds in 60..(180 * 60)) { "focus must be 1m..180m" }

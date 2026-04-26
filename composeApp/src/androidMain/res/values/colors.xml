@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash background — cream paper (#F3EAD7) from PaperPalette.
+         Matches the launcher-icon background so the icon appears to "stay put" as the
+         splash dissolves into the running app. -->
+    <color name="splash_background">#F3EAD7</color>
+
+    <!-- Ink — used as the splash status-bar tint when needed. Same as PaperPalette.ink. -->
+    <color name="splash_ink">#1F140E</color>
+</resources>

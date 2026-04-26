@@ -27,6 +27,7 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(compose.animation)
             implementation(compose.ui)
+            implementation(compose.components.resources)
             implementation(libs.coil.compose)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.androidx.lifecycle.viewmodel)

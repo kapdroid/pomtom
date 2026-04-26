@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      Splash theme. Inherited from Theme.SplashScreen (AndroidX SplashScreen lib) which
+      back-ports the Android 12+ splash API to API 23+. The activity launches into this
+      theme; once setContent() runs, Compose's enableEdgeToEdge() + the post-splash
+      transition take over and the activity renders normally.
+
+      Three required attrs:
+        - windowSplashScreenBackground         the background color shown for the brief
+                                               splash window
+        - windowSplashScreenAnimatedIcon       the centered icon (rendered inside a
+                                               circle on Android 12+; rendered as-is on
+                                               older versions via the lib)
+        - postSplashScreenTheme                the theme the activity is re-themed to
+                                               immediately after the splash finishes
+
+      We point the icon at @drawable/ic_launcher_foreground (tomato art, transparent
+      ground) so it composites cleanly over the cream splash_background.
+    -->
+    <style name="Theme.PomTom.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.PomTom</item>
+    </style>
+
+    <!--
+      Post-splash app theme. Identical in spirit to the previous direct use of
+      Theme.Material.NoActionBar but routed through a named app theme so we can extend
+      it later (status bar tint, themed icons, etc.) without touching the manifest.
+    -->
+    <style name="Theme.PomTom" parent="@android:style/Theme.Material.NoActionBar"/>
+
+</resources>

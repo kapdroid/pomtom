@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import com.kapdroid.pomtom.designsystem.resources.Res
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -43,7 +45,7 @@ fun AuroraBackground(
     Box(modifier = modifier.fillMaxSize().background(colors.bg0)) {
         if (wallpaperPath != null) {
             AsyncImage(
-                model = wallpaperPath.asFileUri(),
+                model = wallpaperPath.asWallpaperModel(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -105,6 +107,20 @@ fun AuroraBackground(
     }
 }
 
-private fun String.asFileUri(): String =
-    if (startsWith("file:") || startsWith("content:") || startsWith("http")) this
-    else "file://$this"
+/**
+ * Resolve a wallpaper [Wallpaper.localPath] string into a URL Coil can load. Three shapes:
+ *  - Already a fully-qualified URI (`file:`, `content:`, `http`) → return as-is. This
+ *    covers user-imported wallpapers that came back from the file picker as content URIs
+ *    or absolute file paths with the scheme already attached.
+ *  - A relative compose-resource path (`files/...`) → run through [Res.getUri] to get
+ *    the platform-specific URL (Android: `jar:file:.../base.apk!/composeResources/...`,
+ *    iOS: a bundle file:// URL). This covers BUNDLED wallpapers shipped in the binary.
+ *  - A bare absolute filesystem path → prepend `file://`. Belt-and-braces for any
+ *    legacy entries that were stored without a scheme.
+ */
+@OptIn(ExperimentalResourceApi::class)
+private fun String.asWallpaperModel(): String = when {
+    startsWith("file:") || startsWith("content:") || startsWith("http") -> this
+    startsWith("files/") -> Res.getUri(this)
+    else -> "file://$this"
+}

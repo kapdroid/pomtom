@@ -7,7 +7,9 @@ enum class AppTheme(val displayName: String) {
     ROSE("Rose");
 
     companion object {
-        val Default = DUSK
+        // Paper is the default — light cream surface that matches the launcher icon
+        // background and the splash screen for a continuous "first launch" feel.
+        val Default = PAPER
         fun fromIdOrDefault(id: String?): AppTheme = entries.firstOrNull { it.name == id } ?: Default
     }
 }
