@@ -1,0 +1,7 @@
+## Android SDK location (required)
+## Example macOS path:
+# sdk.dir=/Users/<you>/Library/Android/sdk
+
+## iOS signing — fill in to build the iOS target locally
+# TEAM_ID=
+# BUNDLE_ID=com.kapdroid.pomtom

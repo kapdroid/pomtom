@@ -1,0 +1,71 @@
+CREATE TABLE focus_session (
+    id TEXT NOT NULL PRIMARY KEY,
+    goal_id TEXT REFERENCES goal(id) ON DELETE SET NULL,
+    started_at INTEGER NOT NULL,
+    resumed_at INTEGER NOT NULL,
+    ended_at INTEGER,
+    planned_ms INTEGER NOT NULL,
+    actual_ms INTEGER NOT NULL DEFAULT 0,
+    phase TEXT NOT NULL,
+    cycle_index INTEGER NOT NULL,
+    status TEXT NOT NULL,
+    strict_mode INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX focus_session_started_idx ON focus_session(started_at);
+CREATE INDEX focus_session_goal_idx ON focus_session(goal_id);
+CREATE INDEX focus_session_status_idx ON focus_session(status);
+
+selectActive:
+SELECT * FROM focus_session
+WHERE status IN ('RUNNING', 'PAUSED')
+ORDER BY started_at DESC
+LIMIT 1;
+
+selectRecent:
+SELECT * FROM focus_session
+ORDER BY started_at DESC
+LIMIT :limit;
+
+selectBetween:
+SELECT * FROM focus_session
+WHERE started_at BETWEEN :from AND :to
+ORDER BY started_at ASC;
+
+selectById:
+SELECT * FROM focus_session WHERE id = :id;
+
+selectFocusedMsBetween:
+SELECT IFNULL(SUM(actual_ms), 0)
+FROM focus_session
+WHERE phase = 'FOCUS'
+  AND status = 'COMPLETED'
+  AND started_at BETWEEN :from AND :to;
+
+selectCompletedFocusCount:
+SELECT COUNT(*)
+FROM focus_session
+WHERE phase = 'FOCUS' AND status = 'COMPLETED';
+
+insert:
+INSERT INTO focus_session (id, goal_id, started_at, resumed_at, ended_at, planned_ms, actual_ms, phase, cycle_index, status, strict_mode)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+updateStatus:
+UPDATE focus_session
+SET status = :status,
+    ended_at = :ended_at,
+    actual_ms = :actual_ms
+WHERE id = :id;
+
+updatePaused:
+UPDATE focus_session
+SET status = 'PAUSED',
+    actual_ms = :actual_ms
+WHERE id = :id;
+
+updateResumed:
+UPDATE focus_session
+SET status = 'RUNNING',
+    resumed_at = :resumed_at
+WHERE id = :id;

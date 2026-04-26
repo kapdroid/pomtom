@@ -1,0 +1,25 @@
+CREATE TABLE wallpaper (
+    id TEXT NOT NULL PRIMARY KEY,
+    display_name TEXT NOT NULL,
+    local_path TEXT NOT NULL,
+    source TEXT NOT NULL,
+    added_at INTEGER NOT NULL
+);
+
+CREATE INDEX wallpaper_source_idx ON wallpaper(source);
+
+selectAll:
+SELECT * FROM wallpaper ORDER BY (source = 'BUNDLED') DESC, added_at DESC;
+
+selectUser:
+SELECT * FROM wallpaper WHERE source = 'USER' ORDER BY added_at DESC;
+
+selectById:
+SELECT * FROM wallpaper WHERE id = :id;
+
+insert:
+INSERT INTO wallpaper (id, display_name, local_path, source, added_at)
+VALUES (?, ?, ?, ?, ?);
+
+deleteById:
+DELETE FROM wallpaper WHERE id = :id;

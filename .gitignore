@@ -1,0 +1,41 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IDE
+.idea/
+*.iml
+.fleet/
+.vscode/
+
+# Kotlin
+.kotlin/
+
+# Local config
+local.properties
+*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android
+captures/
+.externalNativeBuild/
+.cxx/
+
+# iOS / Xcode
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+iosApp/Pods/
+iosApp/Podfile.lock
+
+# Generated
+**/generated/

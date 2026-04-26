@@ -1,0 +1,61 @@
+CREATE TABLE goal (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    type TEXT NOT NULL,
+    target INTEGER NOT NULL,
+    progress INTEGER NOT NULL DEFAULT 0,
+    attach_mode TEXT NOT NULL DEFAULT 'NEXT_SESSION',
+    color TEXT NOT NULL DEFAULT 'AMBER',
+    created_at INTEGER NOT NULL,
+    completed_at INTEGER
+);
+
+CREATE INDEX goal_completed_idx ON goal(completed_at);
+CREATE INDEX goal_attach_idx ON goal(attach_mode);
+
+selectAll:
+SELECT * FROM goal ORDER BY (completed_at IS NOT NULL), created_at DESC;
+
+selectActive:
+SELECT * FROM goal WHERE completed_at IS NULL ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM goal WHERE id = :id;
+
+selectNextAttachable:
+SELECT * FROM goal
+WHERE completed_at IS NULL AND attach_mode = 'NEXT_SESSION'
+ORDER BY created_at ASC
+LIMIT 1;
+
+selectAllSessionAttachable:
+SELECT * FROM goal
+WHERE completed_at IS NULL AND attach_mode IN ('NEXT_SESSION', 'ALL_SESSIONS')
+ORDER BY created_at ASC;
+
+countCompleted:
+SELECT COUNT(*) FROM goal WHERE completed_at IS NOT NULL;
+
+countTotal:
+SELECT COUNT(*) FROM goal;
+
+insert:
+INSERT INTO goal (id, title, type, target, progress, attach_mode, color, created_at, completed_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+update:
+UPDATE goal
+SET title = :title,
+    type = :type,
+    target = :target,
+    progress = :progress,
+    attach_mode = :attach_mode,
+    color = :color,
+    completed_at = :completed_at
+WHERE id = :id;
+
+markCompleted:
+UPDATE goal SET completed_at = :completed_at, progress = target WHERE id = :id;
+
+deleteById:
+DELETE FROM goal WHERE id = :id;
