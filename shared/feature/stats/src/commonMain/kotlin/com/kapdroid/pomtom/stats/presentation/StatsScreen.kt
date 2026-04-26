@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -67,16 +69,23 @@ fun StatsScreen(
 
 @Composable
 private fun StatsContent(state: StatsUiState, onOpenHistory: () -> Unit) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        item { Header() }
-        item { HeroCard(state = state) }
-        item { WeeklyChartCard(byDay = state.byDay) }
-        item { MetricsRow(state = state) }
-        item { RecentSessionsCard(items = state.recentSessions, onOpenHistory = onOpenHistory) }
+    // Centered max-720dp content rail for tablets / landscape — caps the chart and
+    // recent-sessions list at a comfortable reading width without affecting phones.
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxHeight()
+                .widthIn(max = 720.dp)
+                .statusBarsPadding(),
+            contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            item { Header() }
+            item { HeroCard(state = state) }
+            item { WeeklyChartCard(byDay = state.byDay) }
+            item { MetricsRow(state = state) }
+            item { RecentSessionsCard(items = state.recentSessions, onOpenHistory = onOpenHistory) }
+        }
     }
 }
 

@@ -53,6 +53,7 @@ import com.kapdroid.pomtom.timer.navigation.TimerSessionRoute
 import com.kapdroid.pomtom.timer.navigation.TimerStrictRoute
 import com.kapdroid.pomtom.timer.navigation.timerGraph
 import com.kapdroid.pomtom.timer.presentation.CelebrateScreen
+import com.kapdroid.pomtom.timer.presentation.StrictScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -87,6 +88,25 @@ fun AppNavHost(startDestination: Any = TimerTabRoute) {
                         onOpenAudioMixer = { navController.navigate(AudioMixerRoute) },
                         onOpenGoals = { navController.navigate(GoalsTabRoute) },
                         onCreateGoal = { navController.navigate(NewGoalRoute) },
+                        // Strict navigates via the OUTER nav controller so the route
+                        // sits at the top of the outer back stack — that's what makes
+                        // shouldShowAppShell() see TimerStrictRoute as the current
+                        // destination and hide the bottom nav.
+                        onOpenStrict = { _ -> navController.navigate(TimerStrictRoute) },
+                        onCelebrate = { sessionId, goalId ->
+                            navController.navigate(CelebrateRoute(sessionId, goalId))
+                        },
+                    )
+                }
+                composable<TimerStrictRoute> {
+                    StrictScreen(
+                        // Explicit pop target so an emergency exit always lands on the
+                        // Timer tab's home — never on whatever happened to be one
+                        // entry deeper in the back stack. inclusive=false keeps
+                        // TimerTabRoute itself.
+                        onExit = {
+                            navController.popBackStack(TimerTabRoute, inclusive = false)
+                        },
                         onCelebrate = { sessionId, goalId ->
                             navController.navigate(CelebrateRoute(sessionId, goalId))
                         },
@@ -148,6 +168,7 @@ private fun TimerTabHost(
     onOpenAudioMixer: () -> Unit,
     onOpenGoals: () -> Unit,
     onCreateGoal: () -> Unit,
+    onOpenStrict: (sessionId: String) -> Unit,
     onCelebrate: (String, String?) -> Unit,
 ) {
     val navController = rememberNavController()
@@ -158,6 +179,7 @@ private fun TimerTabHost(
             onOpenAudioMixer = onOpenAudioMixer,
             onOpenGoals = onOpenGoals,
             onCreateGoal = onCreateGoal,
+            onOpenStrict = onOpenStrict,
             onCelebrate = onCelebrate,
         )
     }

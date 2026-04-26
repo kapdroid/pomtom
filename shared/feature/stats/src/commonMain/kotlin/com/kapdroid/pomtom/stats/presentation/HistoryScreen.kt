@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -58,19 +60,27 @@ fun HistoryScreen(
 
 @Composable
 private fun HistoryContent(state: HistoryUiState, onBack: () -> Unit) {
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-        HistoryHeader(onBack = onBack)
-        if (state.groups.isEmpty() && !state.isLoading) {
-            EmptyHistory()
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                state.groups.forEach { group ->
-                    item(key = "header-${group.date}") { DayHeader(date = group.date) }
-                    item(key = "card-${group.date}") { DayCard(group = group) }
+    // Same pattern as Stats: centered max-720dp content rail.
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .widthIn(max = 720.dp)
+                .statusBarsPadding(),
+        ) {
+            HistoryHeader(onBack = onBack)
+            if (state.groups.isEmpty() && !state.isLoading) {
+                EmptyHistory()
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 22.dp, end = 22.dp, top = 8.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    state.groups.forEach { group ->
+                        item(key = "header-${group.date}") { DayHeader(date = group.date) }
+                        item(key = "card-${group.date}") { DayCard(group = group) }
+                    }
                 }
             }
         }

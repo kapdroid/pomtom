@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kapdroid.pomtom.designsystem.components.AuroraBackground
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.designsystem.util.WithWindowMetrics
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -165,6 +166,13 @@ private fun BrandRow(onSkip: () -> Unit, skipEnabled: Boolean) {
 
 @Composable
 private fun OnboardingPageContent(page: OnboardingPage) {
+    WithWindowMetrics { metrics ->
+        if (metrics.isLandscape) OnboardingPageLandscape(page) else OnboardingPagePortrait(page)
+    }
+}
+
+@Composable
+private fun OnboardingPagePortrait(page: OnboardingPage) {
     val colors = PomtomTheme.colors
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -172,33 +180,69 @@ private fun OnboardingPageContent(page: OnboardingPage) {
     ) {
         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { page.art() }
         Spacer(Modifier.height(30.dp))
-        Text(
-            text = page.titleStart,
-            style = PomtomTheme.typography.display.copy(
-                fontSize = 48.sp,
-                lineHeight = 50.sp,
-                fontWeight = FontWeight.Normal,
-            ),
-            color = colors.ink,
-        )
-        Text(
-            text = page.titleAccent,
-            style = PomtomTheme.typography.display.copy(
-                fontSize = 48.sp,
-                lineHeight = 50.sp,
-                fontStyle = FontStyle.Italic,
-                fontWeight = FontWeight.Normal,
-            ),
-            color = colors.amber,
-        )
+        OnboardingHeadline(page)
         Spacer(Modifier.height(16.dp))
-        Text(
-            text = page.body,
-            style = PomtomTheme.typography.body.copy(fontSize = 16.sp, lineHeight = 24.sp),
-            color = colors.ink2,
-            modifier = Modifier.fillMaxWidth(0.9f),
-        )
+        OnboardingBody(page)
     }
+}
+
+// Landscape onboarding: illustration left, copy right. Each gets equal weight so the
+// art keeps its presence while the headline + body get the room to breathe.
+@Composable
+private fun OnboardingPageLandscape(page: OnboardingPage) {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) { page.art() }
+        Spacer(Modifier.width(24.dp))
+        Column(
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            OnboardingHeadline(page)
+            Spacer(Modifier.height(16.dp))
+            OnboardingBody(page)
+        }
+    }
+}
+
+@Composable
+private fun OnboardingHeadline(page: OnboardingPage) {
+    val colors = PomtomTheme.colors
+    Text(
+        text = page.titleStart,
+        style = PomtomTheme.typography.display.copy(
+            fontSize = 48.sp,
+            lineHeight = 50.sp,
+            fontWeight = FontWeight.Normal,
+        ),
+        color = colors.ink,
+    )
+    Text(
+        text = page.titleAccent,
+        style = PomtomTheme.typography.display.copy(
+            fontSize = 48.sp,
+            lineHeight = 50.sp,
+            fontStyle = FontStyle.Italic,
+            fontWeight = FontWeight.Normal,
+        ),
+        color = colors.amber,
+    )
+}
+
+@Composable
+private fun OnboardingBody(page: OnboardingPage) {
+    val colors = PomtomTheme.colors
+    Text(
+        text = page.body,
+        style = PomtomTheme.typography.body.copy(fontSize = 16.sp, lineHeight = 24.sp),
+        color = colors.ink2,
+        modifier = Modifier.fillMaxWidth(0.9f),
+    )
 }
 
 @Composable
@@ -235,11 +279,17 @@ private fun FooterControls(
         }
         Spacer(Modifier.height(20.dp))
         val label = if (pageIndex < pageCount - 1) "Continue" else "Enter the room"
+        // Button colors must contrast with the page bg AND with each other. On dark
+        // themes, `surface` is the light cream and `bg0` is dark — readable. On
+        // light themes (Paper, Sakura) `bg0` is also light, so cream-on-light is
+        // invisible — flip to a dark `ink` background with light `surface` text.
+        val buttonBg = if (colors.isDark) colors.surface else colors.ink
+        val buttonFg = if (colors.isDark) colors.bg0 else colors.surface
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(percent = 50))
-                .background(colors.surface)
+                .background(buttonBg)
                 .clickable(role = Role.Button, enabled = !isCompleting, onClick = onAdvance)
                 .padding(vertical = 18.dp)
                 .semantics { contentDescription = label },
@@ -253,13 +303,13 @@ private fun FooterControls(
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.3.sp,
                     ),
-                    color = colors.bg0,
+                    color = buttonFg,
                 )
                 Spacer(Modifier.width(10.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
                     contentDescription = null,
-                    tint = colors.bg0,
+                    tint = buttonFg,
                     modifier = Modifier.size(18.dp),
                 )
             }

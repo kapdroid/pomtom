@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -84,7 +86,15 @@ private fun GoalsScreenContent(
             .fillMaxSize()
             .background(colors.bg0),
     ) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        // Max-720dp content column centered inside the bg0 box — caps line length on
+        // tablets and landscape phones; portrait phones (< 720dp wide) are unaffected.
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .widthIn(max = 720.dp)
+                .align(Alignment.TopCenter)
+                .statusBarsPadding(),
+        ) {
             GoalsHeader(onBack = onBack, onCreate = onCreate)
             GoalsHero(activeCount = state.activeCount, totalSessions = state.totalSessions)
             FilterRow(selected = state.filter, onSelect = onSelectFilter)

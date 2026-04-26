@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import com.kapdroid.pomtom.designsystem.util.stableSafeAreaPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -51,9 +51,11 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kapdroid.pomtom.designsystem.components.AuroraBackground
+import com.kapdroid.pomtom.designsystem.components.BackInterceptor
 import com.kapdroid.pomtom.designsystem.components.FocusCompanion
 import com.kapdroid.pomtom.designsystem.components.ProgressRing
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.designsystem.util.WithWindowMetrics
 import com.kapdroid.pomtom.domain.entity.SessionPhase
 import com.kapdroid.pomtom.platform.FocusModeController
 import com.kapdroid.pomtom.timer.presentation.util.TimeFormat
@@ -72,6 +74,12 @@ fun StrictScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val nav by viewModel.navigationEvents.collectAsStateWithLifecycle()
+
+    // Lock the user in. While the session is running or paused, the system back
+    // gesture is intercepted and discarded — the only escape is the in-screen
+    // 3-second hold-to-emergency-exit gesture (which routes through onAbort →
+    // SessionUiEvent.Stop → navigation back to home).
+    BackInterceptor(enabled = state.isRunning || state.isPaused)
 
     DisposableEffect(focusModeController) {
         focusModeController.enable()
@@ -92,21 +100,36 @@ fun StrictScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    // Single navigation guard. Emergency exit fires both `SessionNavigation.Back` AND
+    // makes the active session null — without this guard, both LaunchedEffects below
+    // would call onExit/onCelebrate, leading to a double pop and the user landing on
+    // the wrong screen (or empty back stack).
+    var hasNavigatedAway by remember { mutableStateOf(false) }
+
     LaunchedEffect(nav) {
         when (val target = nav) {
             SessionNavigation.Back -> {
-                onExit()
+                if (!hasNavigatedAway) {
+                    hasNavigatedAway = true
+                    onExit()
+                }
                 viewModel.consumeNavigation()
             }
             is SessionNavigation.Celebrate -> {
-                onCelebrate(target.sessionId, target.goalId)
+                if (!hasNavigatedAway) {
+                    hasNavigatedAway = true
+                    onCelebrate(target.sessionId, target.goalId)
+                }
                 viewModel.consumeNavigation()
             }
             null -> Unit
         }
     }
     LaunchedEffect(state.session, state.isLoading) {
-        if (!state.isLoading && state.session == null) onExit()
+        if (!state.isLoading && state.session == null && !hasNavigatedAway) {
+            hasNavigatedAway = true
+            onExit()
+        }
     }
 
     StrictScreenContent(
@@ -121,36 +144,117 @@ private fun StrictScreenContent(
     onAbort: () -> Unit,
 ) {
     AuroraBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+        WithWindowMetrics { metrics ->
+            if (metrics.isLandscape) StrictLandscape(state, onAbort)
+            else StrictPortrait(state, onAbort)
+        }
+    }
+}
+
+@Composable
+private fun StrictPortrait(state: SessionUiState, onAbort: () -> Unit) {
+    // stableSafeAreaPadding (designsystem util, expect/actual): locks to a constant
+    // safe-area inset that doesn't shrink when FocusModeController hides the system
+    // bars. Solves two bugs at once on Android — the badge no longer slides up after
+    // entry, and the cutout no longer clips it. iOS gets safeDrawingPadding() since
+    // its FocusModeController doesn't hide the status bar in the first place.
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(stableSafeAreaPadding())
+            .padding(horizontal = 20.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Spacer(Modifier.height(12.dp))
+        StrictBadge()
+        Spacer(Modifier.weight(1f))
+        StrictRing(state = state)
+        Spacer(Modifier.height(28.dp))
+        StrictQuote()
+        StrictCompanionSlot(state = state, topPadding = 18.dp)
+        Spacer(Modifier.weight(1f))
+        StatusChips()
+        Spacer(Modifier.height(14.dp))
+        HoldToExitButton(onAbort = onAbort)
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+// Landscape strict layout: ring on the left half, supporting elements (badge, quote,
+// companion, status chips, hold-to-exit) stacked on the right half. The strict mode's
+// "stay-with-us" feel is preserved — the ring still anchors the eye, the hold-to-exit
+// stays one-tap-away on the right edge.
+@Composable
+private fun StrictLandscape(state: SessionUiState, onAbort: () -> Unit) {
+    // Same stable safe area as portrait — handles cutouts on side edges (landscape
+    // notch position depends on rotation) and stays put through any system-bar
+    // visibility change.
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(stableSafeAreaPadding())
+            .padding(horizontal = 24.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            contentAlignment = Alignment.Center,
         ) {
-            Spacer(Modifier.height(12.dp))
+            StrictRing(state = state)
+        }
+        Spacer(Modifier.width(20.dp))
+        Column(
+            modifier = Modifier.weight(1f).fillMaxSize().padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
             StrictBadge()
             Spacer(Modifier.weight(1f))
-            StrictRing(state = state)
-            Spacer(Modifier.height(28.dp))
             StrictQuote()
-            // Strict mode shows the same companion — it's the calmest signal of
-            // "we're in deep work." Hidden during breaks for the same reason as
-            // the standard session screen.
-            val asset = state.companion.assetPath()
-            if (asset != null && state.session?.phase == SessionPhase.FOCUS) {
-                Spacer(Modifier.height(18.dp))
-                FocusCompanion(
-                    assetPath = asset,
-                    contentDescription = state.companion.label(),
-                    paused = state.isPaused,
-                )
-            }
+            StrictCompanionSlot(state = state, topPadding = 0.dp)
             Spacer(Modifier.weight(1f))
             StatusChips()
-            Spacer(Modifier.height(14.dp))
             HoldToExitButton(onAbort = onAbort)
-            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+/**
+ * Reserves a fixed-height slot for the focus companion so the surrounding column
+ * layout never reflows when the Lottie pops in.
+ *
+ * The shift this fixes: on first composition `state.session` is null while the timer
+ * loads, so the original `if (asset != null && phase == FOCUS) { ... }` rendered
+ * nothing. The two `Spacer(weight = 1f)` in the parent column then split a much
+ * larger vertical space — the badge-to-ring gap was wide. A few hundred ms later the
+ * session loaded, the companion appeared with its ~220 dp height, the weighted
+ * spacers shrank, and the badge-to-ring gap visibly collapsed. By reserving the
+ * companion's slot from the first frame (only when the user has a companion enabled),
+ * the weighted spacers see the same available space throughout — no shift.
+ *
+ * If the user has set companion = OFF, no slot is reserved (the original gapless
+ * behavior). For BREAK phases the slot stays empty but reserved, which is the right
+ * call: the layout shouldn't dance every time a phase changes.
+ */
+@Composable
+private fun StrictCompanionSlot(state: SessionUiState, topPadding: androidx.compose.ui.unit.Dp) {
+    val asset = state.companion.assetPath() ?: return
+    val isFocus = state.session?.phase == SessionPhase.FOCUS
+
+    if (topPadding > 0.dp) Spacer(Modifier.height(topPadding))
+    Box(
+        // 220 dp matches FocusCompanion's default `sizeDp`. Pinning the slot to that
+        // height holds the column layout stable whether the Lottie is currently
+        // rendering or the slot is briefly empty (between phases / during load).
+        modifier = Modifier.size(220.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isFocus) {
+            FocusCompanion(
+                assetPath = asset,
+                contentDescription = state.companion.label(),
+                paused = state.isPaused,
+            )
         }
     }
 }
@@ -198,9 +302,16 @@ private fun StrictRing(state: SessionUiState) {
         isRunning = state.isRunning,
         diameter = 300.dp,
     ) {
+        // Top spacer (~24dp) balances the goal-title block below the time vertically,
+        // so the time lands at the column's geometric center. fillMaxWidth +
+        // CenterHorizontally then ensures each child centers on the ring's true
+        // horizontal axis (otherwise the column collapses to the widest child and the
+        // narrower time text drifts off the ring's centerline).
         Column(
+            modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Spacer(Modifier.height(24.dp))
             Text(
                 text = TimeFormat.mmss(state.remainingMs),
                 style = PomtomTheme.typography.timer.copy(

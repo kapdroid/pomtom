@@ -46,6 +46,7 @@ import com.kapdroid.pomtom.designsystem.components.EqIcon
 import com.kapdroid.pomtom.designsystem.components.FocusCompanion
 import com.kapdroid.pomtom.designsystem.components.ProgressRing
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.designsystem.util.WithWindowMetrics
 import com.kapdroid.pomtom.designsystem.util.softCard
 import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.SessionPhase
@@ -80,66 +81,156 @@ fun SessionRunningScreen(
     }
 
     AuroraBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 22.dp, vertical = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            InSessionPill(isPaused = state.isPaused, isFocus = state.session?.phase == SessionPhase.FOCUS)
-            Spacer(Modifier.height(20.dp))
-            CycleDotsRow(dots = state.cycleDots)
-            Spacer(Modifier.height(28.dp))
-            ProgressRing(
-                progress = state.progress,
-                isRunning = state.isRunning,
-                diameter = 290.dp,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = state.session?.phase?.displayLabel() ?: "FOCUS",
-                        style = PomtomTheme.typography.caption,
-                        color = PomtomTheme.colors.ink3,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = TimeFormat.mmss(state.remainingMs),
-                        style = PomtomTheme.typography.timer,
-                        color = PomtomTheme.colors.ink,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    val attached = state.attachedGoal
-                    Text(
-                        text = attached?.title ?: "Pure focus",
-                        style = PomtomTheme.typography.label,
-                        color = PomtomTheme.colors.ink2,
-                    )
-                }
-            }
-            Spacer(Modifier.height(28.dp))
-            AmbientPeek(ambient = state.ambient, onClick = onOpenAudioMixer)
-            // Focus companion: bundled Lottie with built-in transparency, only visible
-            // during FOCUS phases. Breaks intentionally hide it — break vibe is
-            // "look away from the screen", not "watch the pet".
-            val asset = state.companion.assetPath()
-            if (asset != null && state.session?.phase == SessionPhase.FOCUS) {
-                Spacer(Modifier.height(14.dp))
-                FocusCompanion(
-                    assetPath = asset,
-                    contentDescription = state.companion.label(),
-                    paused = state.isPaused,
+        WithWindowMetrics { metrics ->
+            if (metrics.isLandscape) {
+                SessionContentLandscape(
+                    state = state,
+                    onPauseToggle = { viewModel.onEvent(if (state.isPaused) SessionUiEvent.Resume else SessionUiEvent.Pause) },
+                    onSkip = { viewModel.onEvent(SessionUiEvent.Skip) },
+                    onStop = { viewModel.onEvent(SessionUiEvent.Stop) },
+                    onOpenAudioMixer = onOpenAudioMixer,
+                )
+            } else {
+                SessionContentPortrait(
+                    state = state,
+                    onPauseToggle = { viewModel.onEvent(if (state.isPaused) SessionUiEvent.Resume else SessionUiEvent.Pause) },
+                    onSkip = { viewModel.onEvent(SessionUiEvent.Skip) },
+                    onStop = { viewModel.onEvent(SessionUiEvent.Stop) },
+                    onOpenAudioMixer = onOpenAudioMixer,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun SessionContentPortrait(
+    state: SessionUiState,
+    onPauseToggle: () -> Unit,
+    onSkip: () -> Unit,
+    onStop: () -> Unit,
+    onOpenAudioMixer: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 22.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        InSessionPill(isPaused = state.isPaused, isFocus = state.session?.phase == SessionPhase.FOCUS)
+        Spacer(Modifier.height(20.dp))
+        CycleDotsRow(dots = state.cycleDots)
+        Spacer(Modifier.height(28.dp))
+        SessionRing(state = state, diameter = 290.dp)
+        Spacer(Modifier.height(28.dp))
+        AmbientPeek(ambient = state.ambient, onClick = onOpenAudioMixer)
+        SessionCompanionSlot(state = state, topPadding = 14.dp)
+        Spacer(Modifier.weight(1f))
+        ActionCluster(
+            isPaused = state.isPaused,
+            onPauseToggle = onPauseToggle,
+            onSkip = onSkip,
+            onStop = onStop,
+        )
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+// Landscape layout: ring centered on the left half, the supporting elements (pill,
+// cycle dots, ambient, companion, action cluster) stacked on the right half. The ring
+// shrinks slightly (290 → 240 dp) to fit short heights without crowding the controls.
+@Composable
+private fun SessionContentLandscape(
+    state: SessionUiState,
+    onPauseToggle: () -> Unit,
+    onSkip: () -> Unit,
+    onStop: () -> Unit,
+    onOpenAudioMixer: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 28.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            SessionRing(state = state, diameter = 240.dp)
+        }
+        Spacer(Modifier.width(24.dp))
+        Column(
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(Modifier.weight(1f))
+            InSessionPill(isPaused = state.isPaused, isFocus = state.session?.phase == SessionPhase.FOCUS)
+            CycleDotsRow(dots = state.cycleDots)
+            AmbientPeek(ambient = state.ambient, onClick = onOpenAudioMixer)
+            SessionCompanionSlot(state = state, topPadding = 0.dp)
             Spacer(Modifier.weight(1f))
             ActionCluster(
                 isPaused = state.isPaused,
-                onPauseToggle = { viewModel.onEvent(if (state.isPaused) SessionUiEvent.Resume else SessionUiEvent.Pause) },
-                onSkip = { viewModel.onEvent(SessionUiEvent.Skip) },
-                onStop = { viewModel.onEvent(SessionUiEvent.Stop) },
+                onPauseToggle = onPauseToggle,
+                onSkip = onSkip,
+                onStop = onStop,
             )
-            Spacer(Modifier.height(8.dp))
         }
+    }
+}
+
+// Extracted so both layouts share identical ring chrome (label / time / goal title).
+@Composable
+private fun SessionRing(state: SessionUiState, diameter: androidx.compose.ui.unit.Dp) {
+    ProgressRing(
+        progress = state.progress,
+        isRunning = state.isRunning,
+        diameter = diameter,
+    ) {
+        // fillMaxWidth + CenterHorizontally so each child centers on the ring's true
+        // axis (otherwise the column sizes to its widest child and the time text drifts
+        // off-center within the inner ring area).
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = state.session?.phase?.displayLabel() ?: "FOCUS",
+                style = PomtomTheme.typography.caption,
+                color = PomtomTheme.colors.ink3,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = TimeFormat.mmss(state.remainingMs),
+                style = PomtomTheme.typography.timer.copy(lineHeight = PomtomTheme.typography.timer.fontSize),
+                color = PomtomTheme.colors.ink,
+            )
+            Spacer(Modifier.height(6.dp))
+            val attached = state.attachedGoal
+            Text(
+                text = attached?.title ?: "Pure focus",
+                style = PomtomTheme.typography.label,
+                color = PomtomTheme.colors.ink2,
+            )
+        }
+    }
+}
+
+// Companion is FOCUS-only — extracted so both layouts agree on visibility rules.
+@Composable
+private fun SessionCompanionSlot(state: SessionUiState, topPadding: androidx.compose.ui.unit.Dp) {
+    val asset = state.companion.assetPath()
+    if (asset != null && state.session?.phase == SessionPhase.FOCUS) {
+        if (topPadding > 0.dp) Spacer(Modifier.height(topPadding))
+        FocusCompanion(
+            assetPath = asset,
+            contentDescription = state.companion.label(),
+            paused = state.isPaused,
+        )
     }
 }
 

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -60,10 +62,13 @@ import com.kapdroid.pomtom.designsystem.resources.Res
 import com.kapdroid.pomtom.designsystem.theme.LocalPomtomColors
 import com.kapdroid.pomtom.designsystem.theme.PomtomColors
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.designsystem.theme.palettes.CarbonPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.DuskPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.ForestPalette
+import com.kapdroid.pomtom.designsystem.theme.palettes.MochaPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.PaperPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.RosePalette
+import com.kapdroid.pomtom.designsystem.theme.palettes.SakuraPalette
 import com.kapdroid.pomtom.domain.entity.AppTheme
 import com.kapdroid.pomtom.domain.entity.CompanionType
 import com.kapdroid.pomtom.domain.entity.SessionConfig
@@ -121,7 +126,16 @@ private fun SettingsContent(
             .fillMaxSize()
             .background(colors.bg0),
     ) {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        // widthIn caps content width on tablets / landscape phones so settings rows
+        // don't stretch into a single ribbon. align(TopCenter) recenters the column
+        // inside the full-width Box so the bg0 background still extends edge-to-edge.
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .widthIn(max = 720.dp)
+                .align(Alignment.TopCenter)
+                .statusBarsPadding(),
+        ) {
             SettingsHeader(onBack = onBack)
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -799,11 +813,16 @@ private fun StrictNote() {
 
 @Composable
 private fun ThemeGrid(selected: AppTheme, onSelect: (AppTheme) -> Unit) {
+    // Order pairs themes that visibly contrast: each chunked(2) row puts two adjacent
+    // themes side-by-side so the differences pop. Dark themes first, lights second.
     val themes = listOf(
         ThemeOption(AppTheme.DUSK, DuskPalette, "Dusk"),
-        ThemeOption(AppTheme.PAPER, PaperPalette, "Paper"),
+        ThemeOption(AppTheme.MOCHA, MochaPalette, "Mocha"),
         ThemeOption(AppTheme.FOREST, ForestPalette, "Forest"),
+        ThemeOption(AppTheme.CARBON, CarbonPalette, "Carbon"),
         ThemeOption(AppTheme.ROSE, RosePalette, "Rose"),
+        ThemeOption(AppTheme.SAKURA, SakuraPalette, "Sakura"),
+        ThemeOption(AppTheme.PAPER, PaperPalette, "Paper"),
     )
     Column(
         modifier = Modifier.padding(12.dp),

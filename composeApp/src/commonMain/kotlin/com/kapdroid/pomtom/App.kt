@@ -16,10 +16,13 @@ import com.kapdroid.pomtom.common.DomainEvent
 import com.kapdroid.pomtom.common.EventBus
 import com.kapdroid.pomtom.designsystem.components.LocalWallpaperPath
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.designsystem.theme.palettes.CarbonPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.DuskPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.ForestPalette
+import com.kapdroid.pomtom.designsystem.theme.palettes.MochaPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.PaperPalette
 import com.kapdroid.pomtom.designsystem.theme.palettes.RosePalette
+import com.kapdroid.pomtom.designsystem.theme.palettes.SakuraPalette
 import com.kapdroid.pomtom.di.appModule
 import com.kapdroid.pomtom.di.platformKoinConfig
 import com.kapdroid.pomtom.domain.entity.AppTheme
@@ -59,6 +62,9 @@ private fun ThemedApp() {
         AppTheme.PAPER -> PaperPalette
         AppTheme.FOREST -> ForestPalette
         AppTheme.ROSE -> RosePalette
+        AppTheme.MOCHA -> MochaPalette
+        AppTheme.CARBON -> CarbonPalette
+        AppTheme.SAKURA -> SakuraPalette
     }
     val wallpaperPath by produceState<String?>(initialValue = null, settings.wallpaperId, wallpaperRepository) {
         value = settings.wallpaperId?.let { wallpaperRepository.getById(it)?.localPath }

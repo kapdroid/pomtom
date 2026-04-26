@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kapdroid.pomtom.designsystem.components.AuroraBackground
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.designsystem.util.WithWindowMetrics
 import com.kapdroid.pomtom.timer.presentation.components.ConfettiOverlay
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -77,6 +78,18 @@ private fun CelebrateContent(
     onClose: () -> Unit,
     onSetNextGoal: () -> Unit,
 ) {
+    WithWindowMetrics { metrics ->
+        if (metrics.isLandscape) CelebrateLandscape(state, onClose, onSetNextGoal)
+        else CelebratePortrait(state, onClose, onSetNextGoal)
+    }
+}
+
+@Composable
+private fun CelebratePortrait(
+    state: CelebrateUiState,
+    onClose: () -> Unit,
+    onSetNextGoal: () -> Unit,
+) {
     val colors = PomtomTheme.colors
     Column(
         modifier = Modifier
@@ -91,11 +104,7 @@ private fun CelebrateContent(
         ) {
             HaloMark()
             Spacer(Modifier.height(22.dp))
-            Text(
-                text = if (state.goal != null) "GOAL COMPLETE" else "SESSION COMPLETE",
-                style = PomtomTheme.typography.caption.copy(letterSpacing = 3.0.sp),
-                color = colors.amber,
-            )
+            CelebrateLabel(hasGoal = state.goal != null)
             Spacer(Modifier.height(12.dp))
             CelebrateHeadline(state = state)
             Spacer(Modifier.height(14.dp))
@@ -111,6 +120,60 @@ private fun CelebrateContent(
         )
         Spacer(Modifier.navigationBarsPadding())
     }
+}
+
+// Landscape celebrate: halo + label on the left (the visual prize), text + stats +
+// actions stacked on the right. Confetti rains across both halves.
+@Composable
+private fun CelebrateLandscape(
+    state: CelebrateUiState,
+    onClose: () -> Unit,
+    onSetNextGoal: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 28.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            HaloMark()
+        }
+        Spacer(Modifier.width(20.dp))
+        Column(
+            modifier = Modifier.weight(1.1f).fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            CelebrateLabel(hasGoal = state.goal != null)
+            Spacer(Modifier.height(12.dp))
+            CelebrateHeadline(state = state)
+            Spacer(Modifier.height(14.dp))
+            CelebrateSubcopy(state = state)
+            Spacer(Modifier.height(24.dp))
+            CelebrateStatsRow(state = state)
+            Spacer(Modifier.height(24.dp))
+            CelebrateActions(
+                hasGoal = state.goal != null,
+                onClose = onClose,
+                onSetNextGoal = onSetNextGoal,
+            )
+            Spacer(Modifier.navigationBarsPadding())
+        }
+    }
+}
+
+@Composable
+private fun CelebrateLabel(hasGoal: Boolean) {
+    val colors = PomtomTheme.colors
+    Text(
+        text = if (hasGoal) "GOAL COMPLETE" else "SESSION COMPLETE",
+        style = PomtomTheme.typography.caption.copy(letterSpacing = 3.0.sp),
+        color = colors.amber,
+    )
 }
 
 @Composable

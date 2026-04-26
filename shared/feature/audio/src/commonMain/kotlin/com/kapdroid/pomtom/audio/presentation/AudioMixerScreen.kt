@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -67,28 +69,33 @@ fun AudioMixerScreen(
     }
 
     AuroraBackground {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 22.dp, vertical = 14.dp),
-        ) {
-            MixerHeader(
-                focusTrackName = state.focusTrackName,
-                previewingName = state.previewingName,
-                onClose = onClose,
-            )
-            Spacer(Modifier.height(12.dp))
-            ImportButton(
-                isImporting = state.isImporting,
-                onClick = { launcher.launch() },
-            )
-            Spacer(Modifier.height(8.dp))
-            ErrorStrip(
-                message = state.errorMessage,
-                onDismiss = { viewModel.onEvent(AudioMixerEvent.DismissError) },
-            )
-            TrackList(state = state, viewModel = viewModel)
+        // Mixer is a tall scrolling list of track tiles — cap content width so on
+        // tablets / landscape phones the rows don't stretch into a single ribbon.
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .widthIn(max = 720.dp)
+                    .statusBarsPadding()
+                    .padding(horizontal = 22.dp, vertical = 14.dp),
+            ) {
+                MixerHeader(
+                    focusTrackName = state.focusTrackName,
+                    previewingName = state.previewingName,
+                    onClose = onClose,
+                )
+                Spacer(Modifier.height(12.dp))
+                ImportButton(
+                    isImporting = state.isImporting,
+                    onClick = { launcher.launch() },
+                )
+                Spacer(Modifier.height(8.dp))
+                ErrorStrip(
+                    message = state.errorMessage,
+                    onDismiss = { viewModel.onEvent(AudioMixerEvent.DismissError) },
+                )
+                TrackList(state = state, viewModel = viewModel)
+            }
         }
     }
 }

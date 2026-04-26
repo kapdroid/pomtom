@@ -4,7 +4,10 @@ enum class AppTheme(val displayName: String) {
     DUSK("Dusk"),
     PAPER("Paper"),
     FOREST("Forest"),
-    ROSE("Rose");
+    ROSE("Rose"),
+    MOCHA("Mocha"),
+    CARBON("Carbon"),
+    SAKURA("Sakura");
 
     companion object {
         // Paper is the default — light cream surface that matches the launcher icon

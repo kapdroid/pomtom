@@ -12,7 +12,6 @@ import com.kapdroid.pomtom.domain.entity.AudioTrack
 object BundledTracks {
     val all: List<AudioTrack> = listOf(
         bundled("lofi", "Lo-fi Drift", AudioCategory.AMBIENT),
-        bundled("rain", "Soft Rain", AudioCategory.NATURE),
         bundled("storm", "Distant Storm", AudioCategory.NATURE),
         bundled("forest", "Forest Floor", AudioCategory.NATURE),
         bundled("ocean", "Slow Ocean", AudioCategory.NATURE),

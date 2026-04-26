@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
@@ -101,7 +103,13 @@ private fun NewGoalContent(
             .statusBarsPadding()
             .imePadding(),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        // Form content centered with a max width — mobile-friendly form rail on tablets.
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .widthIn(max = 720.dp)
+                .align(Alignment.TopCenter),
+        ) {
             NewGoalHeader(canSave = state.canSave, isSaving = state.isSaving, onBack = onBack, onSave = onSave)
             Column(
                 modifier = Modifier

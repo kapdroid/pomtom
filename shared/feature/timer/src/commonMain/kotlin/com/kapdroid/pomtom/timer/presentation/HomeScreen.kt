@@ -35,6 +35,7 @@ import com.kapdroid.pomtom.designsystem.components.AuroraBackground
 import com.kapdroid.pomtom.designsystem.components.PrimaryGradientButton
 import com.kapdroid.pomtom.designsystem.components.ProgressRing
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
+import com.kapdroid.pomtom.designsystem.util.WithWindowMetrics
 import com.kapdroid.pomtom.timer.presentation.components.AmbientCard
 import com.kapdroid.pomtom.timer.presentation.components.DurationPicker
 import com.kapdroid.pomtom.timer.presentation.components.GoalCard
@@ -68,35 +69,124 @@ fun HomeScreen(
         }
     }
     AuroraBackground {
+        // Container-aware branching — landscape gets a Row split (ring + Begin on the
+        // left, supporting controls on the right) while portrait keeps the original
+        // stacked column. The split makes use of horizontal real estate without
+        // clipping the Begin button on short landscape heights.
+        WithWindowMetrics { metrics ->
+            if (metrics.isLandscape) {
+                HomeContentLandscape(
+                    state = state,
+                    onOpenSettings = onOpenSettings,
+                    onOpenAudioMixer = onOpenAudioMixer,
+                    onCreateGoal = onCreateGoal,
+                    onBegin = { viewModel.onEvent(HomeUiEvent.BeginFocus) },
+                    onSelectDuration = { viewModel.onEvent(HomeUiEvent.SelectDuration(it)) },
+                )
+            } else {
+                HomeContentPortrait(
+                    state = state,
+                    onOpenSettings = onOpenSettings,
+                    onOpenAudioMixer = onOpenAudioMixer,
+                    onCreateGoal = onCreateGoal,
+                    onBegin = { viewModel.onEvent(HomeUiEvent.BeginFocus) },
+                    onSelectDuration = { viewModel.onEvent(HomeUiEvent.SelectDuration(it)) },
+                )
+            }
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Portrait — original stacked column.
+// -----------------------------------------------------------------------------
+
+@Composable
+private fun HomeContentPortrait(
+    state: HomeUiState,
+    onOpenSettings: () -> Unit,
+    onOpenAudioMixer: () -> Unit,
+    onCreateGoal: () -> Unit,
+    onBegin: () -> Unit,
+    onSelectDuration: (kotlin.time.Duration) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 22.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        HomeChrome(onOpenSettings = onOpenSettings)
+        Spacer(Modifier.height(18.dp))
+        GoalSlot(state, onCreateGoal)
+        Spacer(Modifier.height(28.dp))
+        TimerHero(
+            pendingMinutes = state.pendingFocus.inWholeMinutes.toInt(),
+            onBegin = onBegin,
+        )
+        Spacer(Modifier.height(28.dp))
+        DurationPicker(
+            options = state.durationOptions,
+            selected = state.pendingFocus,
+            onSelected = onSelectDuration,
+        )
+        Spacer(Modifier.height(20.dp))
+        AmbientCard(
+            label = state.ambient.label,
+            isPlaying = state.ambient.isPlaying,
+            hasChoice = state.ambient.hasChoice,
+            onClick = onOpenAudioMixer,
+        )
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Landscape — split layout. Left half: timer hero (ring + Begin button). Right
+// half: chrome + goal + duration picker + ambient card. The left Box uses
+// weight(1.1) so the timer half is slightly more dominant than the controls.
+// -----------------------------------------------------------------------------
+
+@Composable
+private fun HomeContentLandscape(
+    state: HomeUiState,
+    onOpenSettings: () -> Unit,
+    onOpenAudioMixer: () -> Unit,
+    onCreateGoal: () -> Unit,
+    onBegin: () -> Unit,
+    onSelectDuration: (kotlin.time.Duration) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 28.dp, vertical = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.weight(1.1f).fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            TimerHero(
+                pendingMinutes = state.pendingFocus.inWholeMinutes.toInt(),
+                onBegin = onBegin,
+            )
+        }
+        Spacer(Modifier.width(24.dp))
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 22.dp, vertical = 18.dp),
-            horizontalAlignment = Alignment.Start,
+            modifier = Modifier.weight(1f).fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
         ) {
             HomeChrome(onOpenSettings = onOpenSettings)
             Spacer(Modifier.height(18.dp))
-            if (state.attachedGoal != null) {
-                GoalCard(state.attachedGoal!!)
-            } else {
-                GoalSuggestionCard(
-                    onClick = onCreateGoal,
-                    modifier = Modifier.semantics { contentDescription = "Add a goal" },
-                )
-            }
-            Spacer(Modifier.height(28.dp))
-            TimerHero(
-                pendingMinutes = state.pendingFocus.inWholeMinutes.toInt(),
-                onBegin = { viewModel.onEvent(HomeUiEvent.BeginFocus) },
-            )
-            Spacer(Modifier.height(28.dp))
+            GoalSlot(state, onCreateGoal)
+            Spacer(Modifier.height(18.dp))
             DurationPicker(
                 options = state.durationOptions,
                 selected = state.pendingFocus,
-                onSelected = { viewModel.onEvent(HomeUiEvent.SelectDuration(it)) },
+                onSelected = onSelectDuration,
             )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(14.dp))
             AmbientCard(
                 label = state.ambient.label,
                 isPlaying = state.ambient.isPlaying,
@@ -104,6 +194,18 @@ fun HomeScreen(
                 onClick = onOpenAudioMixer,
             )
         }
+    }
+}
+
+@Composable
+private fun GoalSlot(state: HomeUiState, onCreateGoal: () -> Unit) {
+    if (state.attachedGoal != null) {
+        GoalCard(state.attachedGoal!!)
+    } else {
+        GoalSuggestionCard(
+            onClick = onCreateGoal,
+            modifier = Modifier.semantics { contentDescription = "Add a goal" },
+        )
     }
 }
 
@@ -167,7 +269,17 @@ private fun TimerHero(pendingMinutes: Int, onBegin: () -> Unit) {
     ) {
         Box(contentAlignment = Alignment.Center) {
             ProgressRing(progress = 0f, isRunning = false) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // fillMaxWidth + CenterHorizontally on the column makes every child
+                // center on the ring's true axis. Without it, the column sizes to its
+                // widest child (the "X minute focus" label), and the narrower time text
+                // ends up offset from the ring center even though it's "centered"
+                // within the column. Symmetric 6dp/6dp spacers keep the time at the
+                // column's geometric center; lineHeight = fontSize on the timer text
+                // strips mono-font leading so digits sit at the visual center.
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
                     Text(
                         text = "Ready",
                         style = PomtomTheme.typography.caption,
@@ -176,10 +288,10 @@ private fun TimerHero(pendingMinutes: Int, onBegin: () -> Unit) {
                     Spacer(Modifier.height(6.dp))
                     Text(
                         text = TimeFormat.mmss((pendingMinutes * 60_000L).toLong()),
-                        style = PomtomTheme.typography.timer,
+                        style = PomtomTheme.typography.timer.copy(lineHeight = PomtomTheme.typography.timer.fontSize),
                         color = colors.ink,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(6.dp))
                     Text(
                         text = "$pendingMinutes minute focus",
                         style = PomtomTheme.typography.label,
