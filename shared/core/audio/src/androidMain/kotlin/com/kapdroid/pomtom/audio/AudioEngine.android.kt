@@ -62,6 +62,15 @@ actual class AudioEngine(private val context: Context) {
         .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
         .build()
 
+    // Separate attributes for one-shot UI sounds (completion chime). Routed to the
+    // notification volume channel so the chime is audible even when the user has
+    // turned media volume down to zero during their focus block. Sonification is
+    // the right content type for a "ding" — short, attention-getting, non-musical.
+    private val chimeAttributes: AudioAttributes = AudioAttributes.Builder()
+        .setUsage(C.USAGE_NOTIFICATION_EVENT)
+        .setContentType(C.AUDIO_CONTENT_TYPE_SONIFICATION)
+        .build()
+
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS,
@@ -168,6 +177,43 @@ actual class AudioEngine(private val context: Context) {
 
     actual fun unload(trackId: String) {
         runOnMain { unloadInternal(trackId) }
+    }
+
+    // One-shot playback uses a fresh ExoPlayer per call so it doesn't collide
+    // with the long-loop `players` map. We DO NOT request audio focus here —
+    // when the ambient AudioEngine is playing, IT already holds AUDIOFOCUS_GAIN
+    // and a second same-app focus request can stall this transient player. For
+    // a 2s chime, briefly layering over the ambient is the right UX. We use
+    // chimeAttributes (USAGE_NOTIFICATION_EVENT) so the chime plays on the
+    // notification volume channel — audible even when the user has muted media
+    // volume during their focus block. Cleanup is driven by Player.Listener:
+    // on STATE_ENDED or any error, the transient releases itself.
+    actual fun playOneShot(source: AudioSource, gain: Float) {
+        val volume = gain.coerceIn(0f, 1f)
+        if (volume == 0f) return
+        runOnMain {
+            Napier.d { "playOneShot start: ${source.key} @ gain=$volume" }
+            val transient = ExoPlayer.Builder(context)
+                .setAudioAttributes(chimeAttributes, /* handleAudioFocus = */ false)
+                .build()
+            transient.repeatMode = Player.REPEAT_MODE_OFF
+            transient.volume = volume
+            transient.setMediaItem(toMediaItem(source))
+            transient.addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_ENDED) {
+                        Napier.d { "playOneShot ended: ${source.key}" }
+                        transient.release()
+                    }
+                }
+                override fun onPlayerError(error: PlaybackException) {
+                    Napier.e(error) { "playOneShot error: ${source.key} (${error.errorCodeName})" }
+                    transient.release()
+                }
+            })
+            transient.prepare()
+            transient.playWhenReady = true
+        }
     }
 
     actual fun release() {

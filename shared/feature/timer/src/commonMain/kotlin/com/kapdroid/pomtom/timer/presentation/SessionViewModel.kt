@@ -19,6 +19,7 @@ import com.kapdroid.pomtom.domain.usecase.ObserveActiveSessionUseCase
 import com.kapdroid.pomtom.domain.usecase.PauseFocusSessionUseCase
 import com.kapdroid.pomtom.domain.usecase.ResumeFocusSessionUseCase
 import com.kapdroid.pomtom.domain.usecase.StartFocusSessionUseCase
+import io.github.aakira.napier.Napier
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -117,17 +118,27 @@ class SessionViewModel(
         viewModelScope.launch {
             ticker.ticks().collect { nowMs.value = it }
         }
+        // Completion-trigger loop — combine the session and the tick so this
+        // re-evaluates on every ticker emission (~250ms), not only when the
+        // session row in the DB changes. The previous version only checked
+        // inside `observeActiveSession.collect`, which fires once at start
+        // and then never again until pause/complete updates the row — so the
+        // timer would visually reach 00:00 but `finishSession()` would never
+        // run (no SessionCompleted event, no chime, no celebrate screen,
+        // strict mode stays locked).
         viewModelScope.launch {
-            observeActiveSession().collect { session ->
-                if (session != null && session.status == SessionStatus.RUNNING && !autoCompleted) {
-                    val elapsed = ticker.computeElapsedMs(session, clock.nowMs())
-                    if (elapsed >= session.plannedMs) {
-                        autoCompleted = true
-                        finishSession(session, elapsed.coerceAtMost(session.plannedMs))
+            combine(observeActiveSession(), nowMs) { session, now -> session to now }
+                .collect { (session, now) ->
+                    if (session != null && session.status == SessionStatus.RUNNING && !autoCompleted) {
+                        val elapsed = ticker.computeElapsedMs(session, now)
+                        if (elapsed >= session.plannedMs) {
+                            Napier.d { "PomtomCompletion: triggering finishSession (elapsed=$elapsed planned=${session.plannedMs} phase=${session.phase})" }
+                            autoCompleted = true
+                            finishSession(session, elapsed.coerceAtMost(session.plannedMs))
+                        }
                     }
+                    if (session == null) autoCompleted = false
                 }
-                if (session == null) autoCompleted = false
-            }
         }
     }
 
@@ -183,8 +194,10 @@ class SessionViewModel(
     }
 
     private suspend fun finishSession(session: FocusSession, actualMs: Long) {
+        Napier.d { "PomtomCompletion: finishSession invoked for ${session.id} actualMs=$actualMs phase=${session.phase}" }
         completeSession(session.id, actualMs)
         if (session.phase == SessionPhase.FOCUS) {
+            Napier.d { "PomtomCompletion: navigating to Celebrate(${session.id})" }
             navigation.value = SessionNavigation.Celebrate(session.id, session.goalId)
         } else {
             advancePhase(session, settingsRepository.current().sessionConfig)

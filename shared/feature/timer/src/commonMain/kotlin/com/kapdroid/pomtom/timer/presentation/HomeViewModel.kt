@@ -102,10 +102,6 @@ class HomeViewModel(
                     current.copy(focus = target).also { updateSessionConfig(it) }
                 } else current
                 val session = startFocus(phase = SessionPhase.FOCUS, cycleIndex = 0)
-                // Every focus session lands on StrictScreen — the lockdown UI (back +
-                // tabs blocked, hold-to-exit only) is the canonical "focus" experience.
-                // The strictMode setting still controls extra OS-level lockdown
-                // (wake-lock, fullscreen) inside the screen itself.
                 navigation.value = HomeNavigation.OpenStrict(session.id)
                 pendingFocus.value = effective.focus
             }

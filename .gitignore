@@ -18,6 +18,11 @@ build/
 local.properties
 *.local
 
+# Signing
+*.jks
+*.keystore
+keystore.properties
+
 # OS
 .DS_Store
 Thumbs.db

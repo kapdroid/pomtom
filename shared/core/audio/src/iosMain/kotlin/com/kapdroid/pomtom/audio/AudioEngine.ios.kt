@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import platform.AVFAudio.AVAudioEngine
 import platform.AVFAudio.AVAudioFile
+import platform.AVFAudio.AVAudioPlayer
 import platform.AVFAudio.AVAudioPlayerNode
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryOptionMixWithOthers
@@ -31,6 +32,12 @@ actual class AudioEngine {
 
     private val engine = AVAudioEngine()
     private val tracks = mutableMapOf<String, TrackHandle>()
+
+    // Fire-and-forget AVAudioPlayer instances need a strong reference for the
+    // duration of playback or ARC will free them mid-sound. We hold them here
+    // and prune ones that have finished on each new playOneShot call (and on
+    // release()). Bounded growth in practice — a chime fires once per session.
+    private val oneShots = mutableListOf<AVAudioPlayer>()
 
     private val _state = MutableStateFlow<Map<String, TrackState>>(emptyMap())
     actual val state: StateFlow<Map<String, TrackState>> = _state.asStateFlow()
@@ -124,8 +131,32 @@ actual class AudioEngine {
         unloadInternal(trackId)
     }
 
+    // One-shot playback uses AVAudioPlayer (a high-level wrapper around a single
+    // file) rather than the AVAudioEngine pipeline used for looped ambient
+    // tracks. This keeps the chime independent from the engine state — it plays
+    // even if no ambient track is currently loaded.
+    //
+    // The session is reused with `MixWithOthers` so the chime layers cleanly
+    // over any ambient that happens to be playing at the same instant.
+    actual fun playOneShot(source: AudioSource, gain: Float) {
+        val volume = gain.coerceIn(0f, 1f)
+        if (volume == 0f) return
+        configureSession()
+        val url = source.toURL() ?: return
+        // Prune any one-shots that finished since the last call so the list
+        // doesn't grow unbounded across a long-lived process.
+        oneShots.removeAll { !it.playing }
+        val player = AVAudioPlayer(contentsOfURL = url, error = null) ?: return
+        player.volume = volume
+        player.prepareToPlay()
+        player.play()
+        oneShots.add(player)
+    }
+
     actual fun release() {
         tracks.keys.toList().forEach { unloadInternal(it) }
+        oneShots.forEach { it.stop() }
+        oneShots.clear()
         if (engine.isRunning()) engine.stop()
         if (sessionConfigured) {
             runCatching {

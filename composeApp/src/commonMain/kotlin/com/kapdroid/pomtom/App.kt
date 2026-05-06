@@ -11,9 +11,12 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kapdroid.pomtom.audio.AudioEngine
+import com.kapdroid.pomtom.audio.AudioSource
 import com.kapdroid.pomtom.audio.focus.FocusAudioController
 import com.kapdroid.pomtom.common.DomainEvent
 import com.kapdroid.pomtom.common.EventBus
+import io.github.aakira.napier.Napier
 import com.kapdroid.pomtom.designsystem.components.LocalWallpaperPath
 import com.kapdroid.pomtom.designsystem.theme.PomtomTheme
 import com.kapdroid.pomtom.designsystem.theme.palettes.CarbonPalette
@@ -88,14 +91,32 @@ private fun ThemedApp() {
     }
 }
 
+// Bridges domain events into user-facing feedback: haptics on every lifecycle
+// event, plus a one-shot completion chime when a focus session finishes. Kept
+// at the App root so the feedback fires regardless of which screen is on top
+// (the user might have already navigated away from Strict by the time the
+// completion event lands — the chime should still play). The chime is scaled
+// by the user's masterVolume so a 0-volume preference silences it cleanly.
 @Composable
 private fun HapticsBridge() {
     val eventBus: EventBus = koinInject()
     val haptics: Haptics = koinInject()
-    LaunchedEffect(eventBus, haptics) {
+    val audioEngine: AudioEngine = koinInject()
+    val settingsRepository: SettingsRepository = koinInject()
+    LaunchedEffect(eventBus, haptics, audioEngine, settingsRepository) {
+        Napier.d { "PomtomBridge: subscribed to event bus" }
         eventBus.events.collect { event ->
+            Napier.d { "PomtomBridge: event = $event" }
             when (event) {
-                is DomainEvent.SessionCompleted -> haptics.success()
+                is DomainEvent.SessionCompleted -> {
+                    haptics.success()
+                    val volume = settingsRepository.current().masterVolume
+                    Napier.d { "PomtomBridge: SessionCompleted -> playOneShot(chime) at gain=$volume" }
+                    audioEngine.playOneShot(
+                        source = AudioSource.Bundled("files/audio/chime.mp3"),
+                        gain = volume,
+                    )
+                }
                 is DomainEvent.SessionAborted -> haptics.warning()
                 is DomainEvent.GoalCompleted -> haptics.success()
                 is DomainEvent.SessionStarted -> haptics.tap()

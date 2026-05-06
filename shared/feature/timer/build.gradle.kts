@@ -38,6 +38,7 @@ kotlin {
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+            implementation(libs.napier)
             implementation(projects.shared.domain)
             implementation(projects.shared.core.common)
             implementation(projects.shared.core.designsystem)
